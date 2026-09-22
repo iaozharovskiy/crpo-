@@ -96,3 +96,112 @@ class Calculator:
             "hex": self.to_hex,
             "dec": self.to_dec,
         }
+        # запрещаем двойное подчёркивание (защита от __import__ и т.п.)
+        if "__" in expr:
+            raise ValueError("Недопустимые символы в выражении")
+ 
+        try:
+            result = eval(expr, {"__builtins__": {}}, allowed_names)
+        except ZeroDivisionError:
+            raise ValueError("Деление на ноль")
+        except (SyntaxError, TypeError, NameError) as e:
+            raise ValueError(f"Некорректное выражение: {e}")
+        return result
+ 
+    # ---------- команды памяти ----------
+ 
+    def handle_memory(self, cmd, current_value=None):
+        cmd = cmd.upper()
+        if cmd == "MC":
+            self.memory = 0.0
+            return "Память очищена"
+        elif cmd == "MR":
+            return f"Память: {self.memory}"
+        elif cmd == "M+":
+            if current_value is None:
+                current_value = self.history[-1][1] if self.history else 0
+            self.memory += current_value
+            return f"Добавлено в память. Память: {self.memory}"
+        elif cmd == "M-":
+            if current_value is None:
+                current_value = self.history[-1][1] if self.history else 0
+            self.memory -= current_value
+            return f"Вычтено из памяти. Память: {self.memory}"
+        return None
+ 
+ 
+HELP_TEXT = """
+Доступные команды:
+  <выражение>       вычислить (например: 2 + 2 * (3 - 1), sqrt(16), sin(pi/2))
+  ans               результат предыдущего вычисления (можно использовать в выражении)
+  M+ / M- / MR / MC команды памяти
+  deg / rad         переключить режим углов для тригонометрии (сейчас: {mode})
+  history           показать историю вычислений
+  help              показать эту справку
+  exit / quit       выйти
+ 
+Функции: sqrt, sin, cos, tan, asin, acos, atan, log, log10, log2, exp,
+         factorial, abs, round, pow
+Константы: pi, e, tau
+Системы счисления: bin(10), oct(10), hex(10), dec('0x1A')
+"""
+ 
+ 
+def main():
+    calc = Calculator()
+    print("=" * 50)
+    print("   ЖЁСТКИЙ КАЛЬКУЛЯТОР")
+    print("=" * 50)
+    print(HELP_TEXT.format(mode=calc.angle_mode))
+ 
+    while True:
+        try:
+            raw = input(f"[{calc.angle_mode}] >> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nПока!")
+            break
+ 
+        if not raw:
+            continue
+ 
+        low = raw.lower()
+ 
+        if low in ("exit", "quit", "q"):
+            print("Пока!")
+            break
+ 
+        if low == "help":
+            print(HELP_TEXT.format(mode=calc.angle_mode))
+            continue
+ 
+        if low == "history":
+            if not calc.history:
+                print("История пуста")
+            else:
+                for i, (expr, res) in enumerate(calc.history, 1):
+                    print(f"  {i}. {expr} = {res}")
+            continue
+ 
+        if low == "deg":
+            calc.angle_mode = "deg"
+            print("Режим углов: градусы")
+            continue
+ 
+        if low == "rad":
+            calc.angle_mode = "rad"
+            print("Режим углов: радианы")
+            continue
+ 
+        if raw.upper() in ("M+", "M-", "MR", "MC"):
+            print(calc.handle_memory(raw))
+            continue
+ 
+        try:
+            result = calc.safe_eval(raw)
+            calc.history.append((raw, result))
+            print(f"= {result}")
+        except ValueError as e:
+            print(f"Ошибка: {e}")
+        except Exception as e:
+            print(f"Непредвиденная ошибка: {e}")
+            
