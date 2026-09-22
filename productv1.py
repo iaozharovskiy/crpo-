@@ -1,4 +1,4 @@
-cimport math
+import math
 import re
 import sys
 
