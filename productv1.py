@@ -1,4 +1,4 @@
-import math
+cimport math
 import re
 import sys
 
@@ -204,4 +204,5 @@ def main():
             print(f"Ошибка: {e}")
         except Exception as e:
             print(f"Непредвиденная ошибка: {e}")
-            
+if __name__ == "__main__":
+    main()
